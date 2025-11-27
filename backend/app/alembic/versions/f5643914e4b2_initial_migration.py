@@ -1,8 +1,8 @@
-"""Add column last_name to User model
+"""Initial migration
 
-Revision ID: 3291024d8243
+Revision ID: f5643914e4b2
 Revises: 
-Create Date: 2025-09-04 16:04:50.203097
+Create Date: 2025-11-27 19:20:18.325727
 
 """
 from alembic import op
@@ -12,7 +12,7 @@ import sqlmodel
 
 
 # revision identifiers, used by Alembic.
-revision = '3291024d8243'
+revision = 'f5643914e4b2'
 down_revision = None
 branch_labels = None
 depends_on = None
