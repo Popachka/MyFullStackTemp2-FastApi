@@ -16,13 +16,17 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
 import logging
 
+
 def parse_cors(v: Any) -> list[str] | str:
     if isinstance(v, str) and not v.startswith("["):
         return [i.strip() for i in v.split(",")]
     elif isinstance(v, list | str):
         return v
     raise ValueError(v)
+
+
 logger = logging.getLogger("app.config")
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -38,9 +42,15 @@ class Settings(BaseSettings):
     FRONTEND_HOST: str = "http://localhost:5173"
     ENVIRONMENT: Literal["local", "staging", "production"] = "local"
 
-    BACKEND_CORS_ORIGINS: Annotated[
-        list[AnyUrl] | str, BeforeValidator(parse_cors)
-    ] = []
+    TELEGRAM_BOT_TOKEN: str | None = None
+    TELEGRAM_WEBHOOK_SECRET: str = secrets.token_urlsafe(16)
+    RUN_BOT_POLLING: bool = True
+    TELEGRAM_ENABLED: bool = True
+    SERVER_HOST: str = "http://localhost:8000"
+
+    BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = (
+        []
+    )
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -89,7 +99,9 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[prop-decorator]
     @property
     def emails_enabled(self) -> bool:
-        logger.info(f"SMTP_HOST: {self.SMTP_HOST}, EMAILS_FROM_EMAIL: {self.EMAILS_FROM_EMAIL}")
+        logger.info(
+            f"SMTP_HOST: {self.SMTP_HOST}, EMAILS_FROM_EMAIL: {self.EMAILS_FROM_EMAIL}"
+        )
         return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
 
     EMAIL_TEST_USER: EmailStr = "test@example.com"

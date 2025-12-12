@@ -1,5 +1,5 @@
 import uuid
-
+from sqlalchemy import BigInteger, Column
 from pydantic import EmailStr
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -9,6 +9,15 @@ class UserBase(SQLModel):
     is_active: bool = True
     is_superuser: bool = False
     full_name: str | None = Field(default=None, max_length=255)
+    telegram_id: int | None = Field(
+        default=None,
+        sa_column=Column(
+            BigInteger,
+            unique=True,
+            index=True,
+            nullable=True,
+        ),
+    )
 
 # Properties to receive via API on creation
 class UserCreate(UserBase):
@@ -18,6 +27,7 @@ class UserCreate(UserBase):
 class User(UserBase, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
+    items: list["Item"] = Relationship(back_populates="owner")
 
 class UserRegister(SQLModel):
     email: EmailStr = Field(max_length=255)
@@ -67,3 +77,26 @@ class TokenPayload(SQLModel):
 class NewPassword(SQLModel):
     token: str
     new_password: str = Field(min_length=8, max_length=40)
+
+class ItemBase(SQLModel):
+    title: str = Field(min_length=1, max_length=255)
+    description: str | None = Field(default=None, max_length=255)
+
+class ItemCreate(ItemBase):
+    pass 
+
+class ItemUpdate(ItemBase):
+    title: str | None = Field(default=None, max_length=255)
+
+class Item(ItemBase, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete='CASCADE')
+    owner: User = Relationship(back_populates="items")
+
+class ItemPublic(SQLModel):
+    id: uuid.UUID
+    owner_id: uuid.UUID
+
+class ItemsPublic(SQLModel):
+    data: list[ItemPublic]
+    count: int
