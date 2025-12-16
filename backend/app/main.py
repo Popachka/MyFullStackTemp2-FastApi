@@ -11,6 +11,7 @@ from fastapi.routing import APIRoute
 from app.api.main import api_router
 from app.bot.main import build_bot, build_dispatcher
 from app.core.config import settings
+from starlette.middleware.cors import CORSMiddleware
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +50,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 bot_started = True
                 logger.info("Telegram bot webhook set to %s", webhook_url)
         except TelegramNetworkError as exc:
-            logger.error("Telegram network error during startup: %s. Bot disabled.", exc)
-        except Exception as exc:  # catch other init errors (bad token, middleware, etc.)
-            logger.exception("Telegram bot initialization failed: %s. Bot disabled.", exc)
+            logger.error(
+                "Telegram network error during startup: %s. Bot disabled.", exc
+            )
+        except (
+            Exception
+        ) as exc:  # catch other init errors (bad token, middleware, etc.)
+            logger.exception(
+                "Telegram bot initialization failed: %s. Bot disabled.", exc
+            )
             app.state.bot = None
             app.state.dp = None
             app.state.bot_task = None
@@ -74,6 +81,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             await app.state.bot.session.close()
             logger.info("Telegram bot shutdown complete")
 
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
@@ -82,6 +90,15 @@ app = FastAPI(
 )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+# Set all CORS enabled origins
+if settings.all_cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.all_cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 
 @app.post(
@@ -89,13 +106,22 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
     include_in_schema=False,
 )
 async def telegram_webhook(request: Request) -> dict[str, bool]:
-    if not settings.TELEGRAM_ENABLED or not getattr(request.app.state, "bot", None) or not getattr(request.app.state, "dp", None):
+    if (
+        not settings.TELEGRAM_ENABLED
+        or not getattr(request.app.state, "bot", None)
+        or not getattr(request.app.state, "dp", None)
+    ):
         # bot disabled or not initialized; ignore webhook
-        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Telegram bot disabled")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Telegram bot disabled",
+        )
 
     secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token")
     if secret != settings.TELEGRAM_WEBHOOK_SECRET:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Invalid secret")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid secret"
+        )
 
     update = await request.json()
     bot: Bot = request.app.state.bot

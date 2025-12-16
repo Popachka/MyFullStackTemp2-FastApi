@@ -77,7 +77,15 @@ services:
     ports:
       - "1080:1080"
       - "1025:1025"
-
+  frontend:
+    restart: "no"
+    ports:
+      - "5173:80"
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_URL=http://localhost:8000
+        - NODE_ENV=development
 networks:
   traefik-public:
     # For local dev, don't expect an external Traefik network

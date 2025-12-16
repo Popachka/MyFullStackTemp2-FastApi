@@ -8,7 +8,7 @@ class UserBase(SQLModel):
     email: EmailStr = Field(unique=True, index=True, max_length=255)
     is_active: bool = True
     is_superuser: bool = False
-    full_name: str | None = Field(default=None, max_length=255)
+    full_name: str | None = Field(default=None, max_length=255, index=True)
     telegram_id: int | None = Field(
         default=None,
         sa_column=Column(
@@ -93,7 +93,7 @@ class Item(ItemBase, table=True):
     owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete='CASCADE')
     owner: User = Relationship(back_populates="items")
 
-class ItemPublic(SQLModel):
+class ItemPublic(ItemBase):
     id: uuid.UUID
     owner_id: uuid.UUID
 

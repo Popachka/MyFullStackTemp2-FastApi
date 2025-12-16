@@ -2,7 +2,7 @@ import uuid
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlmodel import col, delete, func, select
+from sqlmodel import SQLModel, col, delete, func, select
 
 from app import crud
 from app.api.deps import (
@@ -25,8 +25,14 @@ from app.models import (
     Item,
 )
 from app.utils import generate_new_account_email, send_email
+from app.bot.security import generate_start_token
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+
+class TelegramTokenResponse(SQLModel):
+    token: str
+    bot_username: str | None = None
 
 @router.get(
     '/',
@@ -132,6 +138,25 @@ def delete_user_me(session: SessionDep, current_user: CurrentUser) -> Any:
     session.delete(current_user)
     session.commit()
     return Message(message="User deleted successfully")
+
+@router.post("/me/telegram/token", response_model=TelegramTokenResponse)
+def generate_telegram_token(current_user: CurrentUser) -> TelegramTokenResponse:
+    """
+    Generate Telegram start token for current user.
+    Token expires in 10 minutes.
+    """
+    token = generate_start_token(current_user.id)
+    return TelegramTokenResponse(token=token, bot_username=None)
+
+@router.delete("/me/telegram", response_model=Message)
+def disconnect_telegram(session: SessionDep, current_user: CurrentUser) -> Any:
+    """
+    Disconnect Telegram account from current user.
+    """
+    current_user.telegram_id = None
+    session.add(current_user)
+    session.commit()
+    return Message(message="Telegram account disconnected successfully")
 
 @router.post("/signup", response_model=UserPublic)
 def register_user(session: SessionDep, user_in: UserRegister) -> Any:

@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     TELEGRAM_BOT_TOKEN: str | None = None
     TELEGRAM_WEBHOOK_SECRET: str = secrets.token_urlsafe(16)
     RUN_BOT_POLLING: bool = True
-    TELEGRAM_ENABLED: bool = True
+    TELEGRAM_ENABLED: bool = False
     SERVER_HOST: str = "http://localhost:8000"
 
     BACKEND_CORS_ORIGINS: Annotated[list[AnyUrl] | str, BeforeValidator(parse_cors)] = (
