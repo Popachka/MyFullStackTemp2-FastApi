@@ -120,6 +120,107 @@ Depending on your workflow, you could want to exclude it from Git, for example i
 
 One way to do it could be to add each environment variable to your CI/CD system, and updating the `docker-compose.yml` file to read that specific env var instead of reading the `.env` file.
 
+## Telegram Bot Development
+
+This project includes a Telegram bot that can be tested and developed locally.
+
+### Setup Telegram Bot for Development
+
+1. **Get a Bot Token**:
+   - Go to [@BotFather](https://t.me/BotFather) on Telegram
+   - Create a new bot with `/newbot` (or use an existing one)
+   - Copy the token
+
+2. **Configure `.env` file**:
+   Add these variables to your `.env` file:
+
+   ```dotenv
+   TELEGRAM_ENABLED=true
+   TELEGRAM_BOT_TOKEN=your_bot_token_here
+   TELEGRAM_WEBHOOK_SECRET=your_random_secret_here
+   RUN_BOT_POLLING=true
+   SERVER_HOST=http://localhost:8000
+   ```
+
+   For development, use `RUN_BOT_POLLING=true` (polling mode) which is simpler than webhook mode.
+
+3. **Generate Webhook Secret** (optional, but recommended):
+   ```bash
+   python -c "import secrets; print(secrets.token_urlsafe(16))"
+   ```
+
+### Testing the Bot Locally
+
+1. **Start the stack**:
+   ```bash
+   docker compose watch
+   ```
+
+2. **Check bot logs**:
+   ```bash
+   docker compose logs backend | grep -i telegram
+   ```
+
+   You should see:
+   ```
+   INFO Telegram bot started in polling mode
+   ```
+
+3. **Test the bot**:
+   - Open Telegram and find your bot
+   - Send `/start` command
+   - The bot should respond with a welcome message
+
+### Testing Deep Link Authentication
+
+The bot supports deep link authentication. To test it:
+
+1. **Get a start token** (as superuser):
+   ```bash
+   # First, get an access token by logging in via API
+   curl -X POST "http://localhost:8000/api/v1/login/access-token" \
+     -H "Content-Type: application/x-www-form-urlencoded" \
+     -d "username=admin@example.com&password=your_password"
+   ```
+
+2. **Generate a debug token**:
+   ```bash
+   curl -X GET "http://localhost:8000/api/v1/debug-token?user_id=<user_uuid>" \
+     -H "Authorization: Bearer <access_token>"
+   ```
+
+3. **Test the deep link**:
+   - In Telegram, send: `/start <token>`
+   - Or use the link: `https://t.me/your_bot_username?start=<token>`
+
+### Disable Bot for Development
+
+If you don't want to use the bot during development, set in `.env`:
+
+```dotenv
+TELEGRAM_ENABLED=false
+```
+
+The application will start without the bot, and you won't see Telegram-related errors in logs.
+
+### Local Development Without Docker
+
+If you're running the backend locally (not in Docker):
+
+```bash
+cd backend
+fastapi dev app/main.py
+```
+
+Make sure your `.env` file has the Telegram configuration. The bot will work the same way, using polling mode by default.
+
+### Debugging Bot Issues
+
+* **Bot doesn't respond**: Check `TELEGRAM_BOT_TOKEN` is correct and `TELEGRAM_ENABLED=true`
+* **Network errors**: The Docker container has DNS configured (8.8.8.8, 8.8.4.4) to resolve `api.telegram.org`
+* **Token errors**: Verify the token format is correct (should be like `123456789:ABCdefGHIjklMNOpqrsTUVwxyz`)
+* **Check logs**: Always check `docker compose logs backend` for detailed error messages
+
 ## Pre-commits and code linting
 
 we are using a tool called [pre-commit](https://pre-commit.com/) for code linting and formatting.
@@ -188,6 +289,8 @@ Traefik UI: http://localhost:8090
 
 MailCatcher: http://localhost:1080
 
+**Telegram Bot**: Available in Telegram after starting the stack (if `TELEGRAM_ENABLED=true`)
+
 ### Development URLs with `localhost.tiangolo.com` Configured
 
 Development URLs, for local development.
@@ -205,3 +308,7 @@ Adminer: http://localhost.tiangolo.com:8080
 Traefik UI: http://localhost.tiangolo.com:8090
 
 MailCatcher: http://localhost.tiangolo.com:1080
+
+**Telegram Bot**: Available in Telegram after starting the stack (if `TELEGRAM_ENABLED=true`)
+
+**Debug Token Endpoint**: http://api.localhost.tiangolo.com/api/v1/debug-token (requires authentication)
