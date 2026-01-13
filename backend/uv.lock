@@ -210,7 +210,7 @@ dependencies = [
 requires-dist = [
     { name = "aiogram", specifier = ">=3.13.1" },
     { name = "alembic", specifier = ">=1.16.5" },
-    { name = "bcrypt", specifier = ">=4.3.0" },
+    { name = "bcrypt", specifier = "==4.0.1" },
     { name = "email-validator", specifier = ">=2.3.0" },
     { name = "emails", specifier = ">=0.6" },
     { name = "fastapi", extras = ["standard"], specifier = ">=0.116.1" },
